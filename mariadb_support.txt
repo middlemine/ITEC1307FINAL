@@ -1,0 +1,136 @@
+MariaDB is supported by Wampserver 3.0.7 and more
+In order not to interfere with MySQL, the default port used by MariaDB is port 3307.
+To allow the use of MariaDB, the relevant option must be validated in the Wampserver settings:
+Right-click Wampmanager icon -> Wamp settings -> Allow MariaDB
+But... still have to install a version of MariaDB 10.1.19 or upper of which you will find the installer on Sourceforge or on 'http://wampserver.aviatechno.net'
+
+Once the MariaDB item appears in the Wampmanager menus, you can use it.
+--- Some details about using MariaDB with Wampserver 3.0.7
+
+--- PhpMyAdmin
+PhpMyAdmin can be set to use either MySQL or MariaDB.
+Just modify the file wamp\apps\phpmyadmin4.x.y\config.inc.php by declaring a second server with MariaDB.
+When calling PhpMyAdmin, there will be the choice of the server: MySQL or MariaDB.
+
+--- Contents of the file config.inc.php :
+<?php
+
+/* Servers configuration */
+$i = 0;
+
+$cfg['blowfish_secret'] = 'h]C+{nqW$omNoTIkCwC$%z-LTcy%p6_j$|$Wv[mwngi~|e'; //What you want
+
+//Checking Active DBMS Servers
+$wampConf = @parse_ini_file('../../wampmanager.conf');
+//Check if MySQL and MariaDB with MariaDB on default port
+$mariaFirst = ($wampConf['SupportMySQL'] == 'on' && $wampConf['SupportMariaDB'] == 'on' && $wampConf['mariaPortUsed'] == $wampConf['mysqlDefaultPort']) ? true : false;
+if($wampConf['SupportMySQL'] == 'on') {
+/* Server: localhost [1] */
+	$i++;
+	if($mariaFirst) $i++;
+	$cfg['Servers'][$i]['verbose'] = 'MySQL';
+	$cfg['Servers'][$i]['host'] = '127.0.0.1';
+	$cfg['Servers'][$i]['port'] = $wampConf['mysqlPortUsed'];
+	$cfg['Servers'][$i]['extension'] = 'mysqli';
+	$cfg['Servers'][$i]['auth_type'] = 'cookie';
+	$cfg['Servers'][$i]['user'] = '';
+	$cfg['Servers'][$i]['password'] = '';
+
+	// Hidden databases in PhpMyAdmin left panel
+	//$cfg['Servers'][$i]['hide_db'] = '(information_schema|mysql|performance_schema|sys)';
+
+	// Allow connection without password
+	$cfg['Servers'][$i]['AllowNoPassword'] = true;
+}
+/* Server: localhost [2] */
+if($wampConf['SupportMariaDB'] =='on') {
+	$i++;
+	if($mariaFirst) $i -= 2;
+	$cfg['Servers'][$i]['verbose'] = 'MariaDB';
+	$cfg['Servers'][$i]['host'] = '127.0.0.1';
+	$cfg['Servers'][$i]['port'] = $wampConf['mariaPortUsed'];
+	$cfg['Servers'][$i]['extension'] = 'mysqli';
+	$cfg['Servers'][$i]['auth_type'] = 'cookie';
+	$cfg['Servers'][$i]['user'] = '';
+	$cfg['Servers'][$i]['password'] = '';
+
+	// Hidden databases in PhpMyAdmin left panel
+	//$cfg['Servers'][$i]['hide_db'] = '(information_schema|mysql|performance_schema|sys)';
+	// Allow connection without password
+	$cfg['Servers'][$i]['AllowNoPassword'] = true;
+}
+
+// Suppress Warning about pmadb tables
+$cfg['PmaNoRelation_DisableWarning'] = true;
+
+// To have PRIMARY & INDEX in table structure export
+$cfg['Export']['sql_drop_table'] = true;
+$cfg['Export']['sql_if_not_exists'] = true;
+
+$cfg['MySQLManualBase'] = 'http://dev.mysql.com/doc/refman/5.7/en/';
+/* End of servers configuration */
+
+?>
+--- End of file
+
+For your connections to a database server to be done with MariaDB instead of MySQL, you must specify the port number.
+Indeed, without specifying the port, it will be the default port that will be used, therefore 3306, so the default port assigned to MySQL.
+Connection scripts use, for example:
+$mysqli = new mysqli('127.0.0.1', 'user', 'password', 'database');
+Or, in procedural terms :
+$mysqli = mysqli_connect('127.0.0.1', 'user', 'password', 'database');
+
+To connect with MariaDB, it is imperative to specify the port number:
+$mysqli = new mysqli('127.0.0.1', 'user', 'password', 'database', '3307');
+Or, in procedural terms :
+$mysqli = mysqli_connect('127.0.0.1', 'user', 'password', 'database', '3307');
+
+To check the connections on MariaDB, use the script:
+wamp\www\testmysql.php by 'http://localhost/testmysql.php'
+By having previously modified the script according to your settings, for example, if you did not set a password to root under MariaDB, the script must be:
+<?php
+/*    Using "mysqli" instead of "mysql" that is obsolete.
+* Change the value of parameter 3 if you have set a password on the root userid
+* Add port number 3307 in parameter number 5 to use MariaDB instead of MySQL
+*
+*     Utilisation de "mysqli" à la place de "mysql" qui est obsolète.
+* Changer la valeur du 3e paramètre si vous avez mis un mot de passe à root
+* Ajouter le port 3307 en paramètre 5 si vous voulez utiliser MariaDB
+*/
+$mysqli = new mysqli('127.0.0.1', 'root', '', '', '3307');
+
+if ($mysqli->connect_error) {
+    die('Connect Error (' . $mysqli->connect_errno . ') '
+            . $mysqli->connect_error);
+}
+echo '<p>Connection OK '. $mysqli->host_info.'</p>';
+echo '<p>Server '.$mysqli->server_info.'</p>';
+$mysqli->close();
+?>
+
+--- Replace MySQL by MariaDB ---
+Important note: It is imperative to back up your databases in SQL files by exporting them before disabling MySQL.
+This is the only way to transfer your databases between MySQL and MariaDB.
+-- How to replace MySQL by MariaDB --
+- Change the port used by MySQL by 3308
+Right-click Wampmanager icon -> Tools -> Use a port other than 3306
+And put 3308 in the form "Enter the desired port number" then OK
+And wait for green icon.
+- Disable MySQL
+Right-click Wampmanager icon -> Wamp settings -> Allow MySQL
+So as to uncheck the line. Wait for green icon.
+- Enable MariaDB
+Right-click Wampmanager icon -> Wamp settings -> Allow MariaDB
+So that the line is checked. Wait for green icon.
+- Change the port used by MariaDB by 3306
+Left-Click Wampmanager icon -> MariaDB -> Use port other than 3307
+And put 3306 in the form "Enter the desired port number" then OK
+And wait for green icon.
+
+There you go ! MariaDB is now the default database manager.
+Of course, you still have to import your previously backed up databases.
+
+- From Wampserver 3.1.1, there is a tool to reverse the default DBMS with a single click if both are activated (MySQL AND MariaDB):
+Right-click Wampmanager icon -> Tools -> MySQL <-> MariaDB (if MySQL is the default DBMS)
+or
+Right-click Wampmanager icon -> Tools -> MariaDB <-> MySQL (if MariaDB is the default DBMS)
